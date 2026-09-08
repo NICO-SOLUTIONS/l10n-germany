@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!-- Copyright 2026-TODAY NICO SOLUTIONS - ENGINEERING & IT (<https://www.nico-solutions.de>)
+     License AGPL-3.0 or later (https://www.gnu.org/licenses/agpl). -->
+<odoo>
+    <template
+        id="external_layout_din5008_inherit_report_marks"
+        inherit_id="l10n_din5008.external_layout_din5008"
+    >
+        <!--
+            Visual preview of the DIN 5008 fold and punch marks in the base document layout.
+            These marks are not rendered correctly in the final PDF.
+            The final marks are therefore added to the rendered PDF in Python.
+            Positions are determined by the selected DIN 5008 paperformat (Type A or Type B).
+        -->
+        <xpath expr="//t[@t-set='is_din_paperformat']" position="after">
+            <t
+                t-set="din5008_type"
+                t-value="
+                    'a' if company.paperformat_id == env.ref(
+                        'l10n_din5008.paperformat_euro_din_a',
+                        raise_if_not_found=False
+                    )
+                    else 'b' if company.paperformat_id == env.ref(
+                        'l10n_din5008.paperformat_euro_din',
+                        raise_if_not_found=False
+                    )
+                    else False
+                "
+            />
+
+            <div
+                t-if="din5008_type and (company.l10n_din5008_fold_marker or company.l10n_din5008_hole_marker)"
+                t-attf-class="din5008_marks din5008_type_#{din5008_type}"
+            >
+                <span
+                    t-if="company.l10n_din5008_hole_marker"
+                    class="din5008_mark din5008_hole"
+                />
+                <span
+                    t-if="company.l10n_din5008_fold_marker"
+                    class="din5008_mark din5008_fold_1"
+                />
+                <span
+                    t-if="company.l10n_din5008_fold_marker"
+                    class="din5008_mark din5008_fold_2"
+                />
+            </div>
+        </xpath>
+    </template>
+</odoo>
