@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!-- Copyright 2026-TODAY NICO SOLUTIONS - ENGINEERING & IT (<https://www.nico-solutions.de>)
+     License AGPL-3.0 or later (https://www.gnu.org/licenses/agpl). -->
+<odoo>
+    <template
+        id="external_layout_din5008_inherit_report_marks"
+        inherit_id="l10n_din5008.external_layout_din5008"
+    >
+        <xpath expr="//t[@t-set='is_din_paperformat']" position="after">
+            <t t-set="din5008_config" t-value="company._get_din5008_config()" />
+        </xpath>
+        <xpath expr="//t[@t-if='company.street']" position="attributes">
+            <attribute name="t-if">False</attribute>
+        </xpath>
+        <xpath expr="//t[@t-if='company.street2']" position="attributes">
+            <attribute name="t-if">False</attribute>
+        </xpath>
+        <xpath expr="//t[@t-if='company.zip']" position="attributes">
+            <attribute name="t-if">False</attribute>
+        </xpath>
+        <xpath expr="//t[@t-if='company.city']" position="attributes">
+            <attribute name="t-if">False</attribute>
+        </xpath>
+        <xpath expr="//t[@t-if='company.country_id']" position="attributes">
+            <attribute name="t-if">False</attribute>
+        </xpath>
+        <xpath expr="//t[@t-if='company.name']" position="after">
+            <t
+                t-set="separator"
+                t-value="'|' if din5008_config.get('sender', {}).get('address_separator', 'pipe') == 'pipe' else '•'"
+            />
+            <t
+                t-set="separator_gap"
+                t-value="din5008_config.get('sender', {}).get('address_separator_gap', 1.0)"
+            />
+
+            <t t-if="company.street">
+                <span
+                    t-out="separator"
+                    t-att-style="'margin: 0 %smm;' % separator_gap"
+                />
+                <span t-field="company.street" />
+            </t>
+            <t t-if="company.street2">
+                <span
+                    t-out="separator"
+                    t-att-style="'margin: 0 %smm;' % separator_gap"
+                />
+                <span t-field="company.street2" />
+            </t>
+            <t
+                t-if="din5008_config.get('sender', {}).get('country_indicator', 'none') == 'code' and company.country_id"
+            >
+                <span
+                    t-out="separator"
+                    t-att-style="'margin: 0 %smm;' % separator_gap"
+                />
+                <span
+                    t-out="company.country_id.code + ('-' + company.zip if company.zip else '')"
+                />
+            </t>
+            <t
+                t-if="company.zip and din5008_config.get('sender', {}).get('country_indicator', 'none') != 'code'"
+            >
+                <span
+                    t-out="separator"
+                    t-att-style="'margin: 0 %smm;' % separator_gap"
+                />
+                <span t-field="company.zip" />
+            </t>
+            <t t-if="company.city">
+                <span t-field="company.city" />
+            </t>
+            <t
+                t-if="din5008_config.get('sender', {}).get('country_indicator', 'none') == 'name' and company.country_id"
+            >
+                <span
+                    t-out="separator"
+                    t-att-style="'margin: 0 %smm;' % separator_gap"
+                />
+                <span t-field="company.country_id.name" />
+            </t>
+        </xpath>
+
+        <!-- Marks are rendered for HTML output and preview.
+             PDF marks are added by the Python PDF overlay. -->
+        <xpath expr="//table[hasclass('din_company_info')]" position="before">
+            <t
+                t-set="din_type"
+                t-value="'a' if company.paperformat_id == env.ref('l10n_din5008.paperformat_euro_din_a', raise_if_not_found=False) else 'b' if company.paperformat_id == env.ref('l10n_din5008.paperformat_euro_din', raise_if_not_found=False) else False"
+            />
+            <div
+                t-if="
+                    report_type != 'pdf'
+                    and din_type
+                    and (
+                        din5008_config.get('marks', {}).get('fold_marker', True)
+                        or din5008_config.get('marks', {}).get('hole_marker', True)
+                    )
+                "
+                t-attf-class="din5008_marks din5008_din_#{din_type}"
+            >
+                <span
+                    t-if="din5008_config.get('marks', {}).get('hole_marker', True)"
+                    class="din5008_mark din5008_hole"
+                />
+
+                <t t-if="din5008_config.get('marks', {}).get('fold_marker', True)">
+                    <span class="din5008_mark din5008_fold din5008_fold_1" />
+                    <span class="din5008_mark din5008_fold din5008_fold_2" />
+                </t>
+            </div>
+        </xpath>
+    </template>
+
+    <template
+        id="din5008_css_extend_l10n_din5008_inherit_config"
+        inherit_id="l10n_din5008.din5008_css"
+    >
+        <xpath expr="//t[@t-elif]" position="inside">
+            <t t-set="din5008_config" t-value="company._get_din5008_config()" />
+            <t t-set="default_logo_size" t-value="27 if din_type == 'a' else 45" />
+
+            &amp;.din_page {
+                &amp;.header {
+                    table {
+                        img {
+                            float: <t
+            t-out="din5008_config.get('header', {}).get('company_logo_position', 'right')"
+        /> !important;
+                            max-height: <t
+            t-out="din5008_config.get('header', {}).get('company_logo_size', default_logo_size)"
+        />mm !important;
+                        }
+                    }
+                }
+                &amp;.invoice_note {
+                    tr {
+                        #din5008_report_main_address > span,
+                        td.shipping_address {
+                            font-size: <t
+            t-out="din5008_config.get('receiver', {}).get('font_factor', 1.0)"
+        />em !important;
+                        }
+
+                        #din5008_report_main_address > .colored_address {
+                            font-size: <t
+            t-out="din5008_config.get('sender', {}).get('font_factor', 1.0)"
+        />em !important;
+                        }
+                    }
+                }
+            }
+        </xpath>
+    </template>
+</odoo>
